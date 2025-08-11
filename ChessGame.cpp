@@ -790,7 +790,6 @@ void ChessGame::handleMouseClick(sf::Vector2i mousePos) {
     int y = mousePos.y / 100;
 
     if (rotateBoard) {
-        x = 7 - x;
         y = 7 - y;
     }
 
@@ -895,7 +894,7 @@ void ChessGame::drawPieces() {
      for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
             if (board[y][x].type != PieceType::None) {
-                int drawX = rotateBoard ? 7 - x : x;
+                int drawX = x;
                 int drawY = rotateBoard ? 7 - y : y;
                 board[y][x].sprite.setPosition(drawX * 100 + 50, drawY * 100 + 50);
                 window.draw(board[y][x].sprite);
@@ -908,7 +907,7 @@ void ChessGame::drawSelection() {
     
     if (isPieceSelected) {
         // board rotation 
-        int drawX = rotateBoard ? 7 - selectedPosition.x : selectedPosition.x;
+        int drawX = selectedPosition.x;
         int drawY = rotateBoard ? 7 - selectedPosition.y : selectedPosition.y;
 
         // Draw green dot highlight for selected square
@@ -926,7 +925,7 @@ void ChessGame::drawSelection() {
         // Highlight valid moves with circles
         auto validMoves = getValidMoves(selectedPosition);
         for (const auto& move : validMoves) {
-            int moveX = rotateBoard ? 7 - move.x : move.x;
+            int moveX = move.x;
             int moveY = rotateBoard ? 7 - move.y : move.y;
 
             sf::CircleShape moveCircle(20);
