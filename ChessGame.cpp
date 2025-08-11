@@ -4,6 +4,7 @@
 #include <algorithm>
 
 
+
 ChessGame::ChessGame() : window(sf::VideoMode(800, 800), "SFML Chess") {
     initializeBoard();
     loadTextures();
@@ -22,7 +23,19 @@ ChessGame::ChessGame() : window(sf::VideoMode(800, 800), "SFML Chess") {
 
     window.setFramerateLimit(60);
 }
-
+//piece to char for log
+char ChessGame::pieceTypeToChar(PieceType type) {
+    switch (type) {
+    case PieceType::King: return 'K';
+    case PieceType::Queen: return 'Q';
+    case PieceType::Rook: return 'R';
+    case PieceType::Bishop: return 'B';
+    case PieceType::Knight: return 'N';
+    case PieceType::Pawn: return 'P';
+    default: return ' ';
+    }
+}
+//
 void ChessGame::initializeBoard() {
     board.resize(8, std::vector<Piece>(8));
     
@@ -680,7 +693,14 @@ void ChessGame::performEnPassant(sf::Vector2i from, sf::Vector2i to) {
 void ChessGame::movePiece(sf::Vector2i from, sf::Vector2i to) {
     std::cout << "Moving from (" << from.x << "," << from.y << ") to (" << to.x << "," << to.y << ")\n";
     Piece& movingPiece = board[from.y][from.x];
+    //moveLog
+   
     bool isCapture = (board[to.y][to.x].type != PieceType::None);
+    char movingPieceChar = pieceTypeToChar(movingPiece.type); 
+    logMove(movingPieceChar, from, to, isCapture);
+    //
+    
+    
    
     
 
@@ -1002,3 +1022,85 @@ void ChessGame::switchTurn() {
     currentTurn = (currentTurn == Color::White) ? Color::Black : Color::White;
     rotateBoard = !rotateBoard;
 }
+
+//moveLog
+void ChessGame::logMove(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture) 
+{
+   
+    
+    std::string notation = createMoveNotation(piece, from, to, isCapture);
+
+    if (whiteToMove) {
+        // White starts a new turn
+        std::string turnLine = std::to_string(moveNumber) + ". " + notation;
+        moveLog.push_back(turnLine);
+    }
+    else {
+        // Append black's move to last turn
+        if (!moveLog.empty()) {
+            moveLog.back() += " " + notation;
+        }
+        moveNumber++;
+    }
+
+    // Save to file (overwrite full log each time to keep formatting)
+    std::ofstream logFile("moves.txt");
+    if (logFile.is_open()) {
+        for (const auto& line : moveLog) {
+            logFile << line << "\n";
+        }
+        logFile.close();
+    }
+
+    
+
+    
+   
+    //
+
+    // Switch turns
+    whiteToMove = !whiteToMove;
+}
+std::string ChessGame::squareToNotation(sf::Vector2i pos)
+{
+    char file = 'a' + pos.x;        // column
+    char rank = '8' - pos.y;        // row
+    return std::string(1, file) + std::string(1, rank);
+}
+std::string ChessGame::createMoveNotation(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture)
+{
+    std::string notation;
+
+    // Piece letter (uppercase except pawn which is empty)
+    if (piece != 'P' && piece != 'p') {
+        notation += toupper(piece);
+    }
+
+    if (isCapture) {
+        if (piece == 'P' || piece == 'p') {
+            // For pawns, show file when capturing
+            notation += ('a' + from.x);
+        }
+        notation += 'x';
+    }
+
+    // Destination square
+    notation += squareToNotation(to);
+
+    return notation;
+}
+//
+void ChessGame::savePGN() 
+{
+    std::ofstream file("game.pgn");
+    if (!file.is_open()) return;
+    // Write all moves
+    for (const auto& line : moveLog) 
+    {
+        file << line << " ";
+    }
+    file << "*\n";
+
+    file.close();
+}
+

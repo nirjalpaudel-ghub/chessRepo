@@ -3,6 +3,8 @@
 #include <vector>
 #include <SFML/Audio.hpp>
 #include <Windows.h>
+#include <string>
+#include <fstream>
 
 enum class PieceType {
     None, King, Queen, Rook, Bishop, Knight, Pawn
@@ -72,6 +74,12 @@ private:
     sf::Sound moveSound;
     sf::Sound captureSound;
 
+    //moveLog
+    std::vector<std::string> moveLog;
+    int moveNumber = 1;
+    bool whiteToMove = true;
+    //
+
     // Special move tracking
     sf::Vector2i enPassantTarget = { -1, -1 };
     bool whiteKingMoved = false;
@@ -104,6 +112,15 @@ private:
     void handleMenuClick(sf::Vector2i mousePos);
     void handleKeyPress(sf::Keyboard::Key key);
     void switchTurn();
+    char pieceTypeToChar(PieceType type);
+
+    //movelog
+    void logMove(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture);
+    std::string squareToNotation(sf::Vector2i pos);
+    std::string createMoveNotation(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture);
+    void savePGN();
+ 
+    //
 
     // Movement validation
     bool isValidMove(sf::Vector2i from, sf::Vector2i to) const;
