@@ -81,7 +81,6 @@ private:
     //
 
     // Special move tracking
-    sf::Vector2i enPassantTarget = { -1, -1 };
     bool whiteKingMoved = false;
     bool blackKingMoved = false;
     bool whiteRookKingsideMoved = false;
