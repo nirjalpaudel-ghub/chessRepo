@@ -240,6 +240,8 @@ void ChessGame::handleMenuClick(sf::Vector2i mousePos) {
             return;
         }
     }
+
+   
 }
 
 void ChessGame::handleKeyPress(sf::Keyboard::Key key) {
@@ -323,12 +325,12 @@ void ChessGame::resetGame() {
     std::cout << "Features:" << std::endl;
     std::cout << "- All piece movements" << std::endl;
     std::cout << "- Castling (king and rook must not have moved)" << std::endl;
-    std::cout << "- En passant capture (blue square shows target)" << std::endl;
     std::cout << "- Check detection and prevention" << std::endl;
     std::cout << "- Checkmate and stalemate detection" << std::endl;
     std::cout << "- Pawn promotion to Queen" << std::endl;
     std::cout << "Click on a piece to select it, then click on a destination square to move." << std::endl;
     std::cout << "Press ESC to return to main menu." << std::endl << std::endl;
+
 }
 
 bool ChessGame::isValidMove(sf::Vector2i from, sf::Vector2i to) const {
@@ -378,8 +380,6 @@ bool ChessGame::isValidPawnMove(sf::Vector2i from, sf::Vector2i to, const Piece&
         // Regular capture
         if (target.type != PieceType::None) return true;
 
-        // En passant capture
-        if (isEnPassantValid(from, to)) return true;
     }
 
     return false;
@@ -422,6 +422,7 @@ bool ChessGame::isValidKingMove(sf::Vector2i from, sf::Vector2i to) const {
     return false;
 }
 
+//ensures no pices in between move
 bool ChessGame::isPathClear(sf::Vector2i from, sf::Vector2i to) const {
     int dx = (to.x > from.x) ? 1 : (to.x < from.x) ? -1 : 0;
     int dy = (to.y > from.y) ? 1 : (to.y < from.y) ? -1 : 0;
@@ -443,8 +444,6 @@ bool ChessGame::canCastle(Color color, bool kingside) const {
     int row = (color == Color::White) ? 0 : 7;
     int kingCol = 4;
     int rookCol = kingside ? 7 : 0;
-
-    // Check the hasMoved flag directly from the pieces
     const Piece& king = board[row][kingCol];
     const Piece& rook = board[row][rookCol];
 
@@ -478,6 +477,7 @@ bool ChessGame::canCastle(Color color, bool kingside) const {
             return false;
         }
     }
+    
 
     // Check if destination square is attacked
     sf::Vector2i kingDestination = { kingCol + 2 * step, row };
@@ -489,43 +489,7 @@ bool ChessGame::canCastle(Color color, bool kingside) const {
     return true;
 }
 
-bool ChessGame::isEnPassantValid(sf::Vector2i from, sf::Vector2i to) const {
-    // Check if there's an en passant target set
-    if (enPassantTarget.x == -1 || enPassantTarget.y == -1) {
-        return false;
-    }
 
-    // Check if the destination matches the en passant target
-    if (to != enPassantTarget) {
-        return false;
-    }
-
-    // Make sure it's a pawn making the move
-    const Piece& movingPawn = board[from.y][from.x];
-    if (movingPawn.type != PieceType::Pawn) {
-        return false;
-    }
-
-    // Make sure the move is diagonal (en passant capture pattern)
-    if (abs(to.x - from.x) != 1) {
-        return false;
-    }
-
-    // Check that there's an enemy pawn to capture
-    // The captured pawn is on the same row as the moving pawn, at the target column
-    int capturedPawnRow = from.y;
-    if (!isInBounds({ to.x, capturedPawnRow })) {
-        return false;
-    }
-
-    const Piece& capturedPawn = board[capturedPawnRow][to.x];
-    if (capturedPawn.type != PieceType::Pawn || capturedPawn.color == movingPawn.color) {
-        return false;
-    }
-
-    std::cout << "En passant is valid: capturing pawn at (" << to.x << "," << capturedPawnRow << ")" << std::endl;
-    return true;
-}
 
 
 
@@ -549,7 +513,7 @@ bool ChessGame::isSquareAttacked(sf::Vector2i square, Color byColor) const {
                         return true;
                     }
                 }
-                // For other pieces, use regular move validation (excluding check test)
+                // For other pieces, regular move validation (excluding check test)
                 else {
                     bool validMove = false;
                     switch (piece.type) {
@@ -587,17 +551,6 @@ bool ChessGame::wouldBeInCheck(sf::Vector2i from, sf::Vector2i to, Color color) 
     Piece originalTarget = board[to.y][to.x];
     Piece movingPiece = board[from.y][from.x];
 
-    // Handle en passant in simulation
-    Piece capturedEnPassantPawn = { PieceType::None, Color::White };
-    bool wasEnPassant = false;
-
-    if (movingPiece.type == PieceType::Pawn && to == enPassantTarget && originalTarget.type == PieceType::None) {
-        wasEnPassant = true;
-        int capturedPawnRow = from.y;
-        capturedEnPassantPawn = board[capturedPawnRow][to.x];
-        const_cast<ChessGame*>(this)->board[capturedPawnRow][to.x] = { PieceType::None, Color::White };
-    }
-
     // Simulate move
     const_cast<ChessGame*>(this)->board[to.y][to.x] = movingPiece;
     const_cast<ChessGame*>(this)->board[from.y][from.x] = { PieceType::None, Color::White };
@@ -607,12 +560,6 @@ bool ChessGame::wouldBeInCheck(sf::Vector2i from, sf::Vector2i to, Color color) 
     // Restore board
     const_cast<ChessGame*>(this)->board[from.y][from.x] = movingPiece;
     const_cast<ChessGame*>(this)->board[to.y][to.x] = originalTarget;
-
-    // Restore en passant captured pawn
-    if (wasEnPassant) {
-        int capturedPawnRow = from.y;
-        const_cast<ChessGame*>(this)->board[capturedPawnRow][to.x] = capturedEnPassantPawn;
-    }
 
     return inCheck;
 }
@@ -681,32 +628,19 @@ void ChessGame::performCastling(sf::Vector2i kingFrom, sf::Vector2i kingTo) {
     std::cout << "Castling performed: " << (kingside ? "Kingside" : "Queenside") << std::endl;
 }
 
-void ChessGame::performEnPassant(sf::Vector2i from, sf::Vector2i to) {
-    // The captured pawn is on the same rank as from.y, but the file is to.x
-    int capturedPawnY = from.y;
-    int capturedPawnX = to.x;
-
-    // Remove the captured pawn
-    board[capturedPawnY][capturedPawnX] = { PieceType::None, Color::White };
-}
 
 void ChessGame::movePiece(sf::Vector2i from, sf::Vector2i to) {
     std::cout << "Moving from (" << from.x << "," << from.y << ") to (" << to.x << "," << to.y << ")\n";
     Piece& movingPiece = board[from.y][from.x];
+    
     //moveLog
-   
     bool isCapture = (board[to.y][to.x].type != PieceType::None);
     char movingPieceChar = pieceTypeToChar(movingPiece.type); 
     logMove(movingPieceChar, from, to, isCapture);
-    //
     
-    
-   
-    
-
     // Handle special moves
     bool isCastling = (movingPiece.type == PieceType::King && abs(to.x - from.x) == 2);
-    bool isEnPassant = (movingPiece.type == PieceType::Pawn && to == enPassantTarget && board[to.y][to.x].type == PieceType::None);
+    
 
     // Print move to console
     std::cout << "Move: " << (movingPiece.color == Color::White ? "White " : "Black ");
@@ -730,48 +664,22 @@ void ChessGame::movePiece(sf::Vector2i from, sf::Vector2i to) {
         std::cout << " (captures)";
         
     }
-    if (isEnPassant) {
-        std::cout << " (en passant)";
-    }
     if (isCastling) {
         std::cout << " (castling)";
     }
     std::cout << std::endl;
 
-    // Set hasMoved flag BEFORE executing the move
+    // Setting hasMoved flag BEFORE executing the move
     movingPiece.hasMoved = true;
-
-    // Handle en passant capture removal BEFORE moving the pawn
-    if (isEnPassant) {
-        int capturedPawnY = (movingPiece.color == Color::White) ? to.y - 1 : to.y + 1;
-        board[capturedPawnY][to.x] = { PieceType::None, Color::White };
-    }
 
     // Execute move
     board[to.y][to.x] = movingPiece;
     board[from.y][from.x] = { PieceType::None, Color::White };
     board[to.y][to.x].sprite.setPosition(to.x * 100 + 50, to.y * 100 + 50);
 
-    // Handle special moves
-    if (isEnPassant) {
-        performEnPassant(from, to);
-    }
+    // Handle special move
     if (isCastling) {
         performCastling(from, to);
-    }
-
-    // Reset en passant target every move, then set new one if applicable
-    enPassantTarget = { -1, -1 };
-    if (movingPiece.type == PieceType::Pawn && abs(to.y - from.y) == 2) {
-        enPassantTarget = { to.x, from.y + (to.y - from.y) / 2 };
-        std::cout << "En passant target set at (" << enPassantTarget.x << "," << enPassantTarget.y << ")" << std::endl;
-    }
-
-    // If a pawn moved two squares, set en passant target
-    if (movingPiece.type == PieceType::Pawn && abs(to.y - from.y) == 2) {
-        // The en passant target is the square the pawn "jumped over"
-        enPassantTarget = { to.x, from.y + (to.y - from.y) / 2 };
-        std::cout << "En passant target set at (" << enPassantTarget.x << "," << enPassantTarget.y << ") - opponent can capture here next turn" << std::endl;
     }
 
     // Handle pawn promotion (simplified - always promote to queen)
@@ -812,24 +720,20 @@ void ChessGame::handleMouseClick(sf::Vector2i mousePos) {
     if (rotateBoard) {
         y = 7 - y;
     }
-
+    //new position after rotating
     sf::Vector2i boardPos(x, y);
-    //
+    
     if (menuState == MenuState::MainMenu) {
         handleMenuClick(mousePos);
         return;
     }
 
-    //sf::Vector2i boardPos(mousePos.x / 100, mousePos.y / 100);
 
     if (!isInBounds(boardPos)) {
         isPieceSelected = false;
         return;
     }
 
-    if (gameState == GameState::Checkmate || gameState == GameState::Stalemate) {
-        return; // Game is over
-    }
 
     if (!isPieceSelected) {
         if (board[boardPos.y][boardPos.x].type != PieceType::None &&
@@ -856,10 +760,6 @@ void ChessGame::handleMouseClick(sf::Vector2i mousePos) {
             }
             std::cout << std::endl;
 
-            // Show en passant info
-            if (enPassantTarget.x != -1) {
-                std::cout << "En passant target available at (" << enPassantTarget.x << "," << enPassantTarget.y << ")" << std::endl;
-            }
         }
     }
     else {
@@ -890,15 +790,6 @@ void ChessGame::drawBoard() {
         }
     }
 
-    // Highlight en passant target square (apply rotation)
-    if (enPassantTarget.x != -1 && enPassantTarget.y != -1) {
-        sf::RectangleShape enPassantHighlight(sf::Vector2f(100, 100));
-        int drawX = rotateBoard ? 7 - enPassantTarget.x : enPassantTarget.x;
-        int drawY = rotateBoard ? 7 - enPassantTarget.y : enPassantTarget.y;
-        enPassantHighlight.setPosition(drawX * 100, drawY * 100);
-        enPassantHighlight.setFillColor(sf::Color(0, 0, 255, 64)); // Blue highlight
-        window.draw(enPassantHighlight);
-    }
    }
 
 
@@ -958,6 +849,7 @@ void ChessGame::drawSelection() {
 
     // Highlight king if in check
     if (gameState == GameState::Check || gameState == GameState::Checkmate) {
+        
         sf::Vector2i kingPos = findKing(currentTurn);
         if (kingPos.x != -1) {
             sf::RectangleShape checkHighlight(sf::Vector2f(100, 100));
@@ -1013,9 +905,6 @@ Color ChessGame::oppositeColor(Color color) const {
     return (color == Color::White) ? Color::Black : Color::White;
 }
 
-void ChessGame::undoMove(const Move& move) {
-    // Implementation for undo functionality (last moment bycott)
-}
 
 //rotate board every move
 void ChessGame::switchTurn() {
@@ -1027,7 +916,6 @@ void ChessGame::switchTurn() {
 void ChessGame::logMove(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture) 
 {
    
-    
     std::string notation = createMoveNotation(piece, from, to, isCapture);
 
     if (whiteToMove) {
@@ -1051,12 +939,6 @@ void ChessGame::logMove(char piece, sf::Vector2i from, sf::Vector2i to, bool isC
         }
         logFile.close();
     }
-
-    
-
-    
-   
-    //
 
     // Switch turns
     whiteToMove = !whiteToMove;

@@ -89,7 +89,7 @@ private:
     bool blackRookKingsideMoved = false;
     bool blackRookQueensideMoved = false;
 
-    std::vector<Move> moveHistory;
+    
     //rotate board
     bool rotateBoard = true;
     // Menu variables
@@ -108,6 +108,7 @@ private:
     void drawPieces();
     void drawSelection();
     void drawMenu();
+    void resetGame();
     void handleMouseClick(sf::Vector2i mousePos);
     void handleMenuClick(sf::Vector2i mousePos);
     void handleKeyPress(sf::Keyboard::Key key);
@@ -115,12 +116,11 @@ private:
     char pieceTypeToChar(PieceType type);
 
     //movelog
+    std::vector<Move> moveHistory;
     void logMove(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture);
     std::string squareToNotation(sf::Vector2i pos);
     std::string createMoveNotation(char piece, sf::Vector2i from, sf::Vector2i to, bool isCapture);
     void savePGN();
- 
-    //
 
     // Movement validation
     bool isValidMove(sf::Vector2i from, sf::Vector2i to) const;
@@ -136,9 +136,8 @@ private:
 
     // Special moves
     bool canCastle(Color color, bool kingside) const;
-    bool isEnPassantValid(sf::Vector2i from, sf::Vector2i to) const;
     void performCastling(sf::Vector2i kingFrom, sf::Vector2i kingTo);
-    void performEnPassant(sf::Vector2i from, sf::Vector2i to);
+    
 
     // Check detection
     bool isInCheck(Color color) const;
@@ -153,10 +152,10 @@ private:
 
     // Move execution
     void movePiece(sf::Vector2i from, sf::Vector2i to);
-    void undoMove(const Move& move);
+    
 
     // Utility
     bool isInBounds(sf::Vector2i pos) const;
     Color oppositeColor(Color color) const;
-    void resetGame();
+    
 };
