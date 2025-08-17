@@ -308,7 +308,6 @@ void ChessGame::resetGame() {
     isPieceSelected = false;
     currentTurn = Color::White;
     gameState = GameState::Playing;
-    enPassantTarget = { -1, -1 };
     whiteKingMoved = false;
     blackKingMoved = false;
     whiteRookKingsideMoved = false;
